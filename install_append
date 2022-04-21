@@ -5,9 +5,17 @@ rm -f %{buildroot}/usr/lib/libomptarget.rtl.amdgpu.so
 
 # Rename the Gold plugin elsewhere, as we're erasing *.so below
 mv %{buildroot}/usr/lib64/LLVMgold.so %{buildroot}/usr/lib64/LLVMgold.so.save
+mv %{buildroot}/usr/lib32/LLVMgold.so %{buildroot}/usr/lib32/LLVMgold.so.save
 
 # Remove files that should come from the main llvm package
 rm -rf %{buildroot}/usr/include
+rm -fr %{buildroot}/usr/lib/libear
+rm -fr %{buildroot}/usr/lib/libscanbuild
+rm -fr %{buildroot}/usr/lib/python3.10
+rm -rf %{buildroot}/usr/lib32/*.a
+rm -rf %{buildroot}/usr/lib32/*.so
+rm -rf %{buildroot}/usr/lib32/cmake
+rm -rf %{buildroot}/usr/lib32/pkgconfig
 rm -rf %{buildroot}/usr/lib64/*.a
 rm -rf %{buildroot}/usr/lib64/*.so
 rm -rf %{buildroot}/usr/lib64/cmake
@@ -39,6 +47,7 @@ ln -s ../.. lib64/clang/$FULL_VERSION/lib64
 
 # Put the LLVM gold plugin back, under the versioned name
 mv lib64/LLVMgold.so.save lib64/LLVMgold-$VERSION.so
+mv lib32/LLVMgold.so.save lib32/LLVMgold-$VERSION.so
 mkdir -p lib/bfd-plugins
 ln -s ../../lib64/LLVMgold-$VERSION.so lib/bfd-plugins
 popd

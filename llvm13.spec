@@ -7,7 +7,7 @@
 %define keepstatic 1
 Name     : llvm13
 Version  : 13.0.0
-Release  : 2
+Release  : 3
 URL      : https://github.com/llvm/llvm-project/releases/download/llvmorg-13.0.0/llvm-project-13.0.0.src.tar.xz
 Source0  : https://github.com/llvm/llvm-project/releases/download/llvmorg-13.0.0/llvm-project-13.0.0.src.tar.xz
 Source1  : https://github.com/KhronosGroup/SPIRV-Headers/archive/92f21c9b214178ce67cf1e31a00a33312590403a.tar.gz
@@ -19,8 +19,6 @@ License  : Apache-2.0 BSD-3-Clause ISC MIT MPL-2.0 NCSA
 Requires: llvm13-bin = %{version}-%{release}
 Requires: llvm13-lib = %{version}-%{release}
 Requires: llvm13-license = %{version}-%{release}
-Requires: llvm13-python = %{version}-%{release}
-Requires: llvm13-python3 = %{version}-%{release}
 BuildRequires : Sphinx
 BuildRequires : Vulkan-Headers-dev Vulkan-Loader-dev Vulkan-Tools
 BuildRequires : Z3-dev
@@ -171,34 +169,6 @@ Group: Default
 license components for the llvm13 package.
 
 
-%package python
-Summary: python components for the llvm13 package.
-Group: Default
-Requires: llvm13-python3 = %{version}-%{release}
-
-%description python
-python components for the llvm13 package.
-
-
-%package python3
-Summary: python3 components for the llvm13 package.
-Group: Default
-Requires: python3-core
-Requires: pypi(ptyprocess)
-
-%description python3
-python3 components for the llvm13 package.
-
-
-%package staticdev32
-Summary: staticdev32 components for the llvm13 package.
-Group: Default
-Requires: llvm13-dev = %{version}-%{release}
-
-%description staticdev32
-staticdev32 components for the llvm13 package.
-
-
 %prep
 %setup -q -n llvm-project-13.0.0.src
 cd %{_builddir}
@@ -260,7 +230,7 @@ export http_proxy=http://127.0.0.1:9/
 export https_proxy=http://127.0.0.1:9/
 export no_proxy=localhost,127.0.0.1,0.0.0.0
 export LANG=C.UTF-8
-export SOURCE_DATE_EPOCH=1650487174
+export SOURCE_DATE_EPOCH=1650521535
 unset LD_AS_NEEDED
 pushd llvm
 mkdir -p clr-build
@@ -374,7 +344,7 @@ popd
 popd
 
 %install
-export SOURCE_DATE_EPOCH=1650487174
+export SOURCE_DATE_EPOCH=1650521535
 rm -rf %{buildroot}
 mkdir -p %{buildroot}/usr/share/package-licenses/llvm13
 cp %{_builddir}/SPIRV-Headers-92f21c9b214178ce67cf1e31a00a33312590403a/LICENSE %{buildroot}/usr/share/package-licenses/llvm13/9a84200f47e09abfbde1a6b25028460451b23d03
@@ -438,7 +408,6 @@ rm -f %{buildroot}*/usr/lib64/cmake/llvm/LLVMStaticExports-relwithdebinfo.cmake
 rm -f %{buildroot}*/usr/lib64/pkgconfig/LLVMSPIRVLib.pc
 rm -f %{buildroot}*/usr/lib64/pkgconfig/SPIRV-Headers.pc
 rm -f %{buildroot}*/usr/lib64/pkgconfig/'32*.pc'
-rm -f %{buildroot}*/usr/lib/python3.10/site-packages/six.py
 ## install_append content
 # remove libomptarget.rtl.amdgpu.so for now
 # it is built using rpath and wants to be in the wrong path
@@ -446,9 +415,17 @@ rm -f %{buildroot}/usr/lib/libomptarget.rtl.amdgpu.so
 
 # Rename the Gold plugin elsewhere, as we're erasing *.so below
 mv %{buildroot}/usr/lib64/LLVMgold.so %{buildroot}/usr/lib64/LLVMgold.so.save
+mv %{buildroot}/usr/lib32/LLVMgold.so %{buildroot}/usr/lib32/LLVMgold.so.save
 
 # Remove files that should come from the main llvm package
 rm -rf %{buildroot}/usr/include
+rm -fr %{buildroot}/usr/lib/libear
+rm -fr %{buildroot}/usr/lib/libscanbuild
+rm -fr %{buildroot}/usr/lib/python3.10
+rm -rf %{buildroot}/usr/lib32/*.a
+rm -rf %{buildroot}/usr/lib32/*.so
+rm -rf %{buildroot}/usr/lib32/cmake
+rm -rf %{buildroot}/usr/lib32/pkgconfig
 rm -rf %{buildroot}/usr/lib64/*.a
 rm -rf %{buildroot}/usr/lib64/*.so
 rm -rf %{buildroot}/usr/lib64/cmake
@@ -480,6 +457,7 @@ ln -s ../.. lib64/clang/$FULL_VERSION/lib64
 
 # Put the LLVM gold plugin back, under the versioned name
 mv lib64/LLVMgold.so.save lib64/LLVMgold-$VERSION.so
+mv lib32/LLVMgold.so.save lib32/LLVMgold-$VERSION.so
 mkdir -p lib/bfd-plugins
 ln -s ../../lib64/LLVMgold-$VERSION.so lib/bfd-plugins
 popd
@@ -487,20 +465,6 @@ popd
 
 %files
 %defattr(-,root,root,-)
-/usr/lib/libear/__init__.py
-/usr/lib/libear/config.h.in
-/usr/lib/libear/ear.c
-/usr/lib/libscanbuild/__init__.py
-/usr/lib/libscanbuild/analyze.py
-/usr/lib/libscanbuild/arguments.py
-/usr/lib/libscanbuild/clang.py
-/usr/lib/libscanbuild/compilation.py
-/usr/lib/libscanbuild/intercept.py
-/usr/lib/libscanbuild/report.py
-/usr/lib/libscanbuild/resources/scanview.css
-/usr/lib/libscanbuild/resources/selectable.js
-/usr/lib/libscanbuild/resources/sorttable.js
-/usr/lib/libscanbuild/shell.py
 /usr/lib32/clang/13.0.0/include/cuda_wrappers/algorithm
 /usr/lib32/clang/13.0.0/include/cuda_wrappers/complex
 /usr/lib32/clang/13.0.0/include/cuda_wrappers/new
@@ -1208,55 +1172,7 @@ popd
 
 %files dev32
 %defattr(-,root,root,-)
-/usr/lib32/LLVMgold.so
-/usr/lib32/cmake/clang/AddClang.cmake
-/usr/lib32/cmake/clang/ClangConfig.cmake
-/usr/lib32/cmake/clang/ClangTargets-relwithdebinfo.cmake
-/usr/lib32/cmake/clang/ClangTargets.cmake
-/usr/lib32/cmake/llvm/AddLLVM.cmake
-/usr/lib32/cmake/llvm/AddLLVMDefinitions.cmake
-/usr/lib32/cmake/llvm/AddOCaml.cmake
-/usr/lib32/cmake/llvm/AddSphinxTarget.cmake
-/usr/lib32/cmake/llvm/CheckAtomic.cmake
-/usr/lib32/cmake/llvm/CheckCompilerVersion.cmake
-/usr/lib32/cmake/llvm/ChooseMSVCCRT.cmake
-/usr/lib32/cmake/llvm/CrossCompile.cmake
-/usr/lib32/cmake/llvm/DetermineGCCCompatible.cmake
-/usr/lib32/cmake/llvm/FindGRPC.cmake
-/usr/lib32/cmake/llvm/FindLibpfm.cmake
-/usr/lib32/cmake/llvm/FindOCaml.cmake
-/usr/lib32/cmake/llvm/FindSphinx.cmake
-/usr/lib32/cmake/llvm/FindZ3.cmake
-/usr/lib32/cmake/llvm/GenerateVersionFromVCS.cmake
-/usr/lib32/cmake/llvm/GetErrcMessages.cmake
-/usr/lib32/cmake/llvm/GetLibraryName.cmake
-/usr/lib32/cmake/llvm/HandleLLVMOptions.cmake
-/usr/lib32/cmake/llvm/HandleLLVMStdlib.cmake
-/usr/lib32/cmake/llvm/LLVM-Build.cmake
-/usr/lib32/cmake/llvm/LLVM-Config.cmake
-/usr/lib32/cmake/llvm/LLVMCheckLinkerFlag.cmake
-/usr/lib32/cmake/llvm/LLVMConfig.cmake
-/usr/lib32/cmake/llvm/LLVMConfigExtensions.cmake
-/usr/lib32/cmake/llvm/LLVMConfigVersion.cmake
-/usr/lib32/cmake/llvm/LLVMDistributionSupport.cmake
-/usr/lib32/cmake/llvm/LLVMExports-relwithdebinfo.cmake
-/usr/lib32/cmake/llvm/LLVMExports.cmake
-/usr/lib32/cmake/llvm/LLVMExternalProjectUtils.cmake
-/usr/lib32/cmake/llvm/LLVMInstallSymlink.cmake
-/usr/lib32/cmake/llvm/LLVMProcessSources.cmake
-/usr/lib32/cmake/llvm/TableGen.cmake
-/usr/lib32/cmake/llvm/TensorFlowCompile.cmake
-/usr/lib32/cmake/llvm/UseLibtool.cmake
-/usr/lib32/cmake/llvm/VersionFromVCS.cmake
-/usr/lib32/libLLVM.so
-/usr/lib32/libLTO.so
-/usr/lib32/libRemarks.so
-/usr/lib32/libclang-cpp.so
-/usr/lib32/libclang.so
-/usr/lib32/pkgconfig/32LLVMSPIRVLib.pc
-/usr/lib32/pkgconfig/32SPIRV-Headers.pc
-/usr/lib32/pkgconfig/LLVMSPIRVLib.pc
-/usr/lib32/pkgconfig/SPIRV-Headers.pc
+/usr/lib32/LLVMgold-13.so
 
 %files extras-libclang
 %defattr(-,root,root,-)
@@ -1331,214 +1247,3 @@ popd
 /usr/share/package-licenses/llvm13/e3cccabb67bd491a643d32a7d2b65b49836e626d
 /usr/share/package-licenses/llvm13/f226af67862c0c7a0e921e24672a3a1375691e3e
 /usr/share/package-licenses/llvm13/f4359b9da55a3b9e4d9513eb79cacf125fb49e7b
-
-%files python
-%defattr(-,root,root,-)
-
-%files python3
-%defattr(-,root,root,-)
-/usr/lib/python3*/*
-
-%files staticdev32
-%defattr(-,root,root,-)
-/usr/lib32/libLLVMAArch64AsmParser.a
-/usr/lib32/libLLVMAArch64CodeGen.a
-/usr/lib32/libLLVMAArch64Desc.a
-/usr/lib32/libLLVMAArch64Disassembler.a
-/usr/lib32/libLLVMAArch64Info.a
-/usr/lib32/libLLVMAArch64Utils.a
-/usr/lib32/libLLVMAMDGPUAsmParser.a
-/usr/lib32/libLLVMAMDGPUCodeGen.a
-/usr/lib32/libLLVMAMDGPUDesc.a
-/usr/lib32/libLLVMAMDGPUDisassembler.a
-/usr/lib32/libLLVMAMDGPUInfo.a
-/usr/lib32/libLLVMAMDGPUUtils.a
-/usr/lib32/libLLVMARMAsmParser.a
-/usr/lib32/libLLVMARMCodeGen.a
-/usr/lib32/libLLVMARMDesc.a
-/usr/lib32/libLLVMARMDisassembler.a
-/usr/lib32/libLLVMARMInfo.a
-/usr/lib32/libLLVMARMUtils.a
-/usr/lib32/libLLVMAVRAsmParser.a
-/usr/lib32/libLLVMAVRCodeGen.a
-/usr/lib32/libLLVMAVRDesc.a
-/usr/lib32/libLLVMAVRDisassembler.a
-/usr/lib32/libLLVMAVRInfo.a
-/usr/lib32/libLLVMAggressiveInstCombine.a
-/usr/lib32/libLLVMAnalysis.a
-/usr/lib32/libLLVMAsmParser.a
-/usr/lib32/libLLVMAsmPrinter.a
-/usr/lib32/libLLVMBPFAsmParser.a
-/usr/lib32/libLLVMBPFCodeGen.a
-/usr/lib32/libLLVMBPFDesc.a
-/usr/lib32/libLLVMBPFDisassembler.a
-/usr/lib32/libLLVMBPFInfo.a
-/usr/lib32/libLLVMBinaryFormat.a
-/usr/lib32/libLLVMBitReader.a
-/usr/lib32/libLLVMBitWriter.a
-/usr/lib32/libLLVMBitstreamReader.a
-/usr/lib32/libLLVMCFGuard.a
-/usr/lib32/libLLVMCFIVerify.a
-/usr/lib32/libLLVMCodeGen.a
-/usr/lib32/libLLVMCore.a
-/usr/lib32/libLLVMCoroutines.a
-/usr/lib32/libLLVMCoverage.a
-/usr/lib32/libLLVMDWARFLinker.a
-/usr/lib32/libLLVMDWP.a
-/usr/lib32/libLLVMDebugInfoCodeView.a
-/usr/lib32/libLLVMDebugInfoDWARF.a
-/usr/lib32/libLLVMDebugInfoGSYM.a
-/usr/lib32/libLLVMDebugInfoMSF.a
-/usr/lib32/libLLVMDebugInfoPDB.a
-/usr/lib32/libLLVMDemangle.a
-/usr/lib32/libLLVMDlltoolDriver.a
-/usr/lib32/libLLVMExecutionEngine.a
-/usr/lib32/libLLVMExegesis.a
-/usr/lib32/libLLVMExegesisAArch64.a
-/usr/lib32/libLLVMExegesisMips.a
-/usr/lib32/libLLVMExegesisPowerPC.a
-/usr/lib32/libLLVMExegesisX86.a
-/usr/lib32/libLLVMExtensions.a
-/usr/lib32/libLLVMFileCheck.a
-/usr/lib32/libLLVMFrontendOpenACC.a
-/usr/lib32/libLLVMFrontendOpenMP.a
-/usr/lib32/libLLVMFuzzMutate.a
-/usr/lib32/libLLVMGlobalISel.a
-/usr/lib32/libLLVMHexagonAsmParser.a
-/usr/lib32/libLLVMHexagonCodeGen.a
-/usr/lib32/libLLVMHexagonDesc.a
-/usr/lib32/libLLVMHexagonDisassembler.a
-/usr/lib32/libLLVMHexagonInfo.a
-/usr/lib32/libLLVMIRReader.a
-/usr/lib32/libLLVMInstCombine.a
-/usr/lib32/libLLVMInstrumentation.a
-/usr/lib32/libLLVMInterfaceStub.a
-/usr/lib32/libLLVMInterpreter.a
-/usr/lib32/libLLVMJITLink.a
-/usr/lib32/libLLVMLTO.a
-/usr/lib32/libLLVMLanaiAsmParser.a
-/usr/lib32/libLLVMLanaiCodeGen.a
-/usr/lib32/libLLVMLanaiDesc.a
-/usr/lib32/libLLVMLanaiDisassembler.a
-/usr/lib32/libLLVMLanaiInfo.a
-/usr/lib32/libLLVMLibDriver.a
-/usr/lib32/libLLVMLineEditor.a
-/usr/lib32/libLLVMLinker.a
-/usr/lib32/libLLVMMC.a
-/usr/lib32/libLLVMMCA.a
-/usr/lib32/libLLVMMCACustomBehaviourAMDGPU.a
-/usr/lib32/libLLVMMCDisassembler.a
-/usr/lib32/libLLVMMCJIT.a
-/usr/lib32/libLLVMMCParser.a
-/usr/lib32/libLLVMMIRParser.a
-/usr/lib32/libLLVMMSP430AsmParser.a
-/usr/lib32/libLLVMMSP430CodeGen.a
-/usr/lib32/libLLVMMSP430Desc.a
-/usr/lib32/libLLVMMSP430Disassembler.a
-/usr/lib32/libLLVMMSP430Info.a
-/usr/lib32/libLLVMMipsAsmParser.a
-/usr/lib32/libLLVMMipsCodeGen.a
-/usr/lib32/libLLVMMipsDesc.a
-/usr/lib32/libLLVMMipsDisassembler.a
-/usr/lib32/libLLVMMipsInfo.a
-/usr/lib32/libLLVMNVPTXCodeGen.a
-/usr/lib32/libLLVMNVPTXDesc.a
-/usr/lib32/libLLVMNVPTXInfo.a
-/usr/lib32/libLLVMObjCARCOpts.a
-/usr/lib32/libLLVMObject.a
-/usr/lib32/libLLVMObjectYAML.a
-/usr/lib32/libLLVMOption.a
-/usr/lib32/libLLVMOrcJIT.a
-/usr/lib32/libLLVMOrcShared.a
-/usr/lib32/libLLVMOrcTargetProcess.a
-/usr/lib32/libLLVMPasses.a
-/usr/lib32/libLLVMPowerPCAsmParser.a
-/usr/lib32/libLLVMPowerPCCodeGen.a
-/usr/lib32/libLLVMPowerPCDesc.a
-/usr/lib32/libLLVMPowerPCDisassembler.a
-/usr/lib32/libLLVMPowerPCInfo.a
-/usr/lib32/libLLVMProfileData.a
-/usr/lib32/libLLVMRISCVAsmParser.a
-/usr/lib32/libLLVMRISCVCodeGen.a
-/usr/lib32/libLLVMRISCVDesc.a
-/usr/lib32/libLLVMRISCVDisassembler.a
-/usr/lib32/libLLVMRISCVInfo.a
-/usr/lib32/libLLVMRemarks.a
-/usr/lib32/libLLVMRuntimeDyld.a
-/usr/lib32/libLLVMSPIRVLib.a
-/usr/lib32/libLLVMScalarOpts.a
-/usr/lib32/libLLVMSelectionDAG.a
-/usr/lib32/libLLVMSparcAsmParser.a
-/usr/lib32/libLLVMSparcCodeGen.a
-/usr/lib32/libLLVMSparcDesc.a
-/usr/lib32/libLLVMSparcDisassembler.a
-/usr/lib32/libLLVMSparcInfo.a
-/usr/lib32/libLLVMSupport.a
-/usr/lib32/libLLVMSymbolize.a
-/usr/lib32/libLLVMSystemZAsmParser.a
-/usr/lib32/libLLVMSystemZCodeGen.a
-/usr/lib32/libLLVMSystemZDesc.a
-/usr/lib32/libLLVMSystemZDisassembler.a
-/usr/lib32/libLLVMSystemZInfo.a
-/usr/lib32/libLLVMTableGen.a
-/usr/lib32/libLLVMTableGenGlobalISel.a
-/usr/lib32/libLLVMTarget.a
-/usr/lib32/libLLVMTextAPI.a
-/usr/lib32/libLLVMTransformUtils.a
-/usr/lib32/libLLVMVectorize.a
-/usr/lib32/libLLVMWebAssemblyAsmParser.a
-/usr/lib32/libLLVMWebAssemblyCodeGen.a
-/usr/lib32/libLLVMWebAssemblyDesc.a
-/usr/lib32/libLLVMWebAssemblyDisassembler.a
-/usr/lib32/libLLVMWebAssemblyInfo.a
-/usr/lib32/libLLVMWebAssemblyUtils.a
-/usr/lib32/libLLVMWindowsManifest.a
-/usr/lib32/libLLVMX86AsmParser.a
-/usr/lib32/libLLVMX86CodeGen.a
-/usr/lib32/libLLVMX86Desc.a
-/usr/lib32/libLLVMX86Disassembler.a
-/usr/lib32/libLLVMX86Info.a
-/usr/lib32/libLLVMXCoreCodeGen.a
-/usr/lib32/libLLVMXCoreDesc.a
-/usr/lib32/libLLVMXCoreDisassembler.a
-/usr/lib32/libLLVMXCoreInfo.a
-/usr/lib32/libLLVMXRay.a
-/usr/lib32/libLLVMipo.a
-/usr/lib32/libclangAPINotes.a
-/usr/lib32/libclangARCMigrate.a
-/usr/lib32/libclangAST.a
-/usr/lib32/libclangASTMatchers.a
-/usr/lib32/libclangAnalysis.a
-/usr/lib32/libclangBasic.a
-/usr/lib32/libclangCodeGen.a
-/usr/lib32/libclangCrossTU.a
-/usr/lib32/libclangDependencyScanning.a
-/usr/lib32/libclangDirectoryWatcher.a
-/usr/lib32/libclangDriver.a
-/usr/lib32/libclangDynamicASTMatchers.a
-/usr/lib32/libclangEdit.a
-/usr/lib32/libclangFormat.a
-/usr/lib32/libclangFrontend.a
-/usr/lib32/libclangFrontendTool.a
-/usr/lib32/libclangHandleCXX.a
-/usr/lib32/libclangHandleLLVM.a
-/usr/lib32/libclangIndex.a
-/usr/lib32/libclangIndexSerialization.a
-/usr/lib32/libclangInterpreter.a
-/usr/lib32/libclangLex.a
-/usr/lib32/libclangParse.a
-/usr/lib32/libclangRewrite.a
-/usr/lib32/libclangRewriteFrontend.a
-/usr/lib32/libclangSema.a
-/usr/lib32/libclangSerialization.a
-/usr/lib32/libclangStaticAnalyzerCheckers.a
-/usr/lib32/libclangStaticAnalyzerCore.a
-/usr/lib32/libclangStaticAnalyzerFrontend.a
-/usr/lib32/libclangTesting.a
-/usr/lib32/libclangTooling.a
-/usr/lib32/libclangToolingASTDiff.a
-/usr/lib32/libclangToolingCore.a
-/usr/lib32/libclangToolingInclusions.a
-/usr/lib32/libclangToolingRefactoring.a
-/usr/lib32/libclangToolingSyntax.a
-/usr/lib32/libclangTransformer.a
