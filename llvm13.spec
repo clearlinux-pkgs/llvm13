@@ -421,7 +421,7 @@ mv %{buildroot}/usr/lib32/LLVMgold.so %{buildroot}/usr/lib32/LLVMgold.so.save
 rm -rf %{buildroot}/usr/include
 rm -fr %{buildroot}/usr/lib/libear
 rm -fr %{buildroot}/usr/lib/libscanbuild
-rm -fr %{buildroot}/usr/lib/python3.10
+rm -fr %{buildroot}/usr/lib/python3.11
 rm -rf %{buildroot}/usr/lib32/*.a
 rm -rf %{buildroot}/usr/lib32/*.so
 rm -rf %{buildroot}/usr/lib32/cmake
